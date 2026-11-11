@@ -980,8 +980,7 @@ DumpReturn PlayerDumpReader::LoadDump(std::istream& input, uint32 account, std::
     ObjectGuid::LowType mailLowGuidOffset = sObjectMgr->_mailId;
 
     std::map<ObjectGuid::LowType, ObjectGuid::LowType> petIds;
-    // GeneratePetNumber() pre-increments, so _hiPetNumber is the last pet number in use
-    ObjectGuid::LowType petLowGuidOffset = sObjectMgr->_hiPetNumber + 1;
+    ObjectGuid::LowType petLowGuidOffset = sObjectMgr->_hiPetNumber;
 
     std::map<uint64, uint64> equipmentSetIds;
     uint64 equipmentSetGuidOffset = sObjectMgr->_equipmentSetGuid;

@@ -1422,30 +1422,10 @@ void Creature::SetLootRecipient(Unit* unit, bool withGroup)
 
 bool Creature::IsSharedQuestTarget() const
 {
+    CreatureTemplate const* creatureTemplate = GetCreatureTemplate();
     Map const* map = FindMap();
-    return map && map->IsWorldMap() && !IsControlledByPlayer()
-        && sObjectMgr->GetQuestTargetRespawn(GetEntry()) == QuestTargetRespawn::Named;
-}
-
-uint32 Creature::GetQuestTargetRespawnCap() const
-{
-    Map const* map = FindMap();
-    if (!map || !map->IsWorldMap() || IsControlledByPlayer() || isWorldBoss())
-        return 0;
-
-    uint32 const longRespawn = sWorld->getIntConfig(CONFIG_RESPAWN_QUEST_TARGET_LONG_RESPAWN);
-    if (longRespawn && m_respawnDelay > longRespawn)
-        return 0;
-
-    switch (sObjectMgr->GetQuestTargetRespawn(GetEntry()))
-    {
-        case QuestTargetRespawn::Named:
-            return sWorld->getIntConfig(CONFIG_RESPAWN_QUEST_TARGET_NAMED);
-        case QuestTargetRespawn::General:
-            return sWorld->getIntConfig(CONFIG_RESPAWN_QUEST_TARGET_GENERAL);
-        default:
-            return 0;
-    }
+    return creatureTemplate && (creatureTemplate->type_flags & CREATURE_TYPE_FLAG_QUEST_BOSS)
+        && map && map->IsWorldMap() && !IsControlledByPlayer();
 }
 
 void Creature::RegisterSharedQuestContributor(Unit* attacker)
@@ -2157,8 +2137,8 @@ void Creature::setDeathState(DeathState state, bool despawn)
         bool const respawnTimerFromDeath = IsRespawnTimerFromDeath();
         uint32 dynamicRespawnDelay = GetMap()->ApplyDynamicModeRespawnScaling(this,
             CreatureRespawnClock::DelayAtDeath(m_respawnDelay, respawnTimerFromDeath));
-        if (uint32 const questTargetCap = GetQuestTargetRespawnCap())
-            dynamicRespawnDelay = std::min<uint32>(dynamicRespawnDelay, questTargetCap);
+        if (IsSharedQuestTarget() && !isWorldBoss())
+            dynamicRespawnDelay = std::min<uint32>(dynamicRespawnDelay, 30);
         m_respawnTime = CreatureRespawnClock::RespawnTimeAtDeath(GameTime::GetGameTime().count(), dynamicRespawnDelay,
             m_corpseDelay, respawnTimerFromDeath);
 
@@ -2901,7 +2881,7 @@ void Creature::SaveRespawnTime()
 bool Creature::IsRespawnTimerFromDeath() const
 {
     return m_spawnId && !IsSummon() && (!m_creatureData || m_creatureData->dbData)
-        && (GetQuestTargetRespawnCap() || sWorld->getBoolConfig(CONFIG_RESPAWN_TIMER_STARTS_AT_DEATH));
+        && ((IsSharedQuestTarget() && !isWorldBoss()) || sWorld->getBoolConfig(CONFIG_RESPAWN_TIMER_STARTS_AT_DEATH));
 }
 
 bool Creature::CanCreatureAttack(Unit const* victim, bool skipDistCheck) const

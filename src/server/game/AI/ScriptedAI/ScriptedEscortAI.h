@@ -112,12 +112,7 @@ public:
     ObjectGuid GetEventStarterGUID() { return m_uiPlayerGUID; }
 
     void AddEscortState(uint32 escortState) { m_uiEscortState |= escortState; }
-    void RemoveEscortState(uint32 escortState)
-    {
-        m_uiEscortState &= ~escortState;
-        if (escortState & STATE_ESCORT_RETURNING)
-            m_hasReturnPoint = false;
-    }
+    void RemoveEscortState(uint32 escortState) { m_uiEscortState &= ~escortState; }
 
 protected:
     Player* GetPlayerForEscort() { return ObjectAccessor::GetPlayer(*me, m_uiPlayerGUID); }
@@ -145,7 +140,5 @@ private:
     bool DespawnAtFar;
     bool ScriptWP;
     bool HasImmuneToNPCFlags;
-    bool m_hasReturnPoint;
-    Position m_returnPoint;
 };
 #endif

@@ -278,7 +278,7 @@ std::vector<TrainerSpell> TrainerSpells(Data const& data, Realm const& realm, st
     {
         maxLevel = std::max(maxLevel, spell.ReqLevel);
         std::uint32_t const spellId = TrainerRank(spell.SpellId, exists);
-        if (spellId != spell.SpellId && data.SkillLines.contains(spellId))
+        if (spellId != spell.SpellId)
         {
             TrainerSpell const retuned = reborn(spellId);
             spell.SpellId = spellId;

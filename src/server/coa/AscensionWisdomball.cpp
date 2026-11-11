@@ -23,7 +23,6 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace
@@ -100,7 +99,6 @@ std::unordered_map<uint32, DungeonQuests> _questsByMap;
 std::mutex _dungeonQuestLock;
 bool _dungeonQuestsLoaded = false;
 std::vector<uint32> _dungeonQuests;
-std::vector<uint32> _questsEndedInDungeons;
 
 std::mutex _statusLock;
 std::unordered_map<uint32, StatusState> _statusByPlayer;
@@ -242,20 +240,13 @@ std::vector<uint32> DungeonMaps()
     return maps;
 }
 
-struct DungeonQuestIndex
+std::vector<uint32> LoadAllDungeonQuests()
 {
-    std::vector<uint32> quests;
-    std::vector<uint32> endedInside;
-};
-
-DungeonQuestIndex LoadAllDungeonQuests()
-{
-    DungeonQuestIndex index;
-    std::vector<uint32>& ids = index.quests;
+    std::vector<uint32> ids;
 
     std::vector<uint32> const maps = DungeonMaps();
     if (maps.empty())
-        return index;
+        return ids;
 
     std::string const mapList = IdList(maps);
 
@@ -274,42 +265,27 @@ DungeonQuestIndex LoadAllDungeonQuests()
 
     ReadQuestIds(ids,
         "SELECT DISTINCT qs.quest FROM creature c JOIN creature_queststarter qs ON qs.id = c.id WHERE c.map IN (" + mapList + ")");
-    ReadQuestIds(index.endedInside,
+    ReadQuestIds(ids,
         "SELECT DISTINCT qe.quest FROM creature c JOIN creature_questender qe ON qe.id = c.id WHERE c.map IN (" + mapList + ")");
     ReadQuestIds(ids,
         "SELECT DISTINCT qs.quest FROM gameobject g JOIN gameobject_queststarter qs ON qs.id = g.id WHERE g.map IN (" + mapList + ")");
-    ReadQuestIds(index.endedInside,
+    ReadQuestIds(ids,
         "SELECT DISTINCT qe.quest FROM gameobject g JOIN gameobject_questender qe ON qe.id = g.id WHERE g.map IN (" + mapList + ")");
 
-    SortUnique(index.endedInside);
-    ids.insert(ids.end(), index.endedInside.begin(), index.endedInside.end());
     SortUnique(ids);
-    return index;
-}
-
-void EnsureDungeonQuestsLoaded()
-{
-    if (_dungeonQuestsLoaded)
-        return;
-
-    DungeonQuestIndex index = LoadAllDungeonQuests();
-    _dungeonQuests = std::move(index.quests);
-    _questsEndedInDungeons = std::move(index.endedInside);
-    _dungeonQuestsLoaded = true;
+    return ids;
 }
 
 std::vector<uint32> const& AllDungeonQuests()
 {
     std::lock_guard<std::mutex> lock(_dungeonQuestLock);
-    EnsureDungeonQuestsLoaded();
-    return _dungeonQuests;
-}
+    if (!_dungeonQuestsLoaded)
+    {
+        _dungeonQuests = LoadAllDungeonQuests();
+        _dungeonQuestsLoaded = true;
+    }
 
-std::vector<uint32> const& QuestsEndedInDungeons()
-{
-    std::lock_guard<std::mutex> lock(_dungeonQuestLock);
-    EnsureDungeonQuestsLoaded();
-    return _questsEndedInDungeons;
+    return _dungeonQuests;
 }
 
 bool InDungeon(Player* player)
@@ -331,7 +307,6 @@ std::vector<uint32> CarriedDungeonQuests(Player* player)
 {
     std::vector<uint32> carried;
     std::vector<uint32> const& dungeons = AllDungeonQuests();
-    std::vector<uint32> const& endedInside = QuestsEndedInDungeons();
 
     for (auto const& status : player->getQuestStatusMap())
     {
@@ -343,9 +318,6 @@ std::vector<uint32> CarriedDungeonQuests(Player* player)
 
         Quest const* quest = sObjectMgr->GetQuestTemplate(status.first);
         if (IsPlaceholder(quest) || quest->IsRepeatable())
-            continue;
-
-        if (CompletesWithoutPlayerAction(quest) && Contains(endedInside, status.first))
             continue;
 
         carried.push_back(status.first);
@@ -362,9 +334,6 @@ bool CanOffer(Player* player, uint32 questId)
         return false;
 
     if (CompletesWithoutPlayerAction(quest))
-        return false;
-
-    if (quest->HasFlag(QUEST_FLAGS_UNAVAILABLE))
         return false;
 
     if (quest->IsRepeatable())

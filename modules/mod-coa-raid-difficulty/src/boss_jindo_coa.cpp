@@ -26,8 +26,7 @@
  *   ward 15 (25 above Normal). The pit is empty before the fight, and he casts
  *   neither Hex nor Banish (tester, live).
  *
- * From stock: the shade's invisibility and random aggro, the totems and the
- * dance when the raid wipes.
+ * From stock: the shade, the totems and the dance when the raid wipes.
  *
  * Decided here, not in the data:
  *   - the totems are the stock creatures, summoned by Ascension's cast bars;
@@ -36,11 +35,7 @@
  *     seven days in the data, so they end when their totem dies or despawns;
  *   - the totems stand ten yards from him, spread evenly; Mythic and Ascended
  *     use the Heroic totem counts and health;
- *   - the Shade of Jin'do neither swings nor casts Shadow Shock: in the CoA logs
- *     of 2026-08-02 and 2026-08-24 it only casts Seeking Shadow Bolts (2118556,
- *     4s, interruptible) over and over, while every 4s each player takes a
- *     Seeking Shadow Bolt (2118551 by difficulty) until the shade dies; an
- *     interrupted cast does not stop them.
+ *   - Seeking Shadow Bolts (in the block, never seen) is left out.
  */
 
 #include "CreatureScript.h"
@@ -83,12 +78,6 @@ namespace
         SPELL_DELUSIONS_DOT            = 2118512,
         SPELL_FRIENDS_ON_THE_OTHER_SIDE = 2118518,
         SPELL_ANIMATE_BONES            = 2118560,
-
-        SPELL_SHADE_OF_JINDO_PASSIVE   = 24307,
-        SPELL_SHADE_OF_JINDO_VISUAL    = 24313,
-        SPELL_RANDOM_AGGRO             = 23878,
-        SPELL_SEEKING_SHADOW_BOLT      = 2118551,
-        SPELL_SEEKING_SHADOW_BOLTS_BAR = 2118556,
     };
 
     enum Events
@@ -117,8 +106,6 @@ namespace
     constexpr uint32 HEALING_WARD_HEALTH_NORMAL = 15;
     constexpr uint32 HEALING_WARD_HEALTH_HEROIC = 25;
     constexpr uint8 ANIMATED_TROLLS           = 8;
-    constexpr Milliseconds SEEKING_SHADOW_BOLTS = 4s;
-    constexpr float SEEKING_SHADOW_BOLTS_RANGE  = 200.0f;
 
     std::array<Position, 10> const BloodPitTrolls =
     { {
@@ -427,43 +414,6 @@ namespace
         }
     };
 
-    struct npc_shade_of_jindo_coa : public ScriptedAI
-    {
-        npc_shade_of_jindo_coa(Creature* creature) : ScriptedAI(creature) { }
-
-        void IsSummonedBy(WorldObject* /*summoner*/) override
-        {
-            DoZoneInCombat();
-            DoCastSelf(SPELL_SHADE_OF_JINDO_PASSIVE, true);
-            DoCastSelf(SPELL_SHADE_OF_JINDO_VISUAL, true);
-            DoCastAOE(SPELL_RANDOM_AGGRO, true);
-            _scheduler.Schedule(SEEKING_SHADOW_BOLTS, [this](TaskContext volley)
-            {
-                for (Player* player : PlayersWithin(me, SEEKING_SHADOW_BOLTS_RANGE))
-                    me->CastSpell(player, SPELL_SEEKING_SHADOW_BOLT, true);
-                volley.Repeat();
-            }).Schedule(0ms, [this](TaskContext bar)
-            {
-                if (!me->HasUnitState(UNIT_STATE_CASTING))
-                    if (Unit* target = me->GetVictim() ? me->GetVictim() : SelectTarget(SelectTargetMethod::Random, 0))
-                        DoCast(target, SPELL_SEEKING_SHADOW_BOLTS_BAR);
-                bar.Repeat(500ms);
-            }).Schedule(1s, [this](TaskContext aggro)
-            {
-                DoCastAOE(SPELL_RANDOM_AGGRO, true);
-                aggro.Repeat();
-            });
-        }
-
-        void UpdateAI(uint32 diff) override
-        {
-            _scheduler.Update(diff);
-        }
-
-    private:
-        TaskScheduler _scheduler;
-    };
-
     // Healing Stream: every second its first value in percent of the target's missing health.
     class spell_jindo_coa_healing_stream : public AuraScript
     {
@@ -499,6 +449,5 @@ void AddCoaJindoScripts()
 {
     RegisterZulGurubCreatureAI(boss_jindo_coa);
     RegisterZulGurubCreatureAI(npc_jindo_coa_totem);
-    RegisterZulGurubCreatureAI(npc_shade_of_jindo_coa);
     RegisterSpellScript(spell_jindo_coa_healing_stream);
 }

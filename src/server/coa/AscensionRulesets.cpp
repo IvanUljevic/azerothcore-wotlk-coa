@@ -98,17 +98,16 @@ void NotifyLevelScalingIfChanged(Player* player, bool blockedBefore)
         player->RefreshQuestLogQueries();
 }
 
-void ApplyRuleset(Player* player, uint32 selectionId, bool forChallenge = false)
+void ApplyRuleset(Player* player, uint32 selectionId)
 {
-    if (!AscensionRulesets::CanApply(player, SelectedRuleset(selectionId), forChallenge))
+    if (!AscensionRulesets::CanApply(player, SelectedRuleset(selectionId)))
         return;
     SetHighRiskSuspended(player, false);
     bool const blockedBefore = RulesetBlocksLevelScaling(player);
     player->RemoveAurasDueToSpell(SPELL_HIGH_RISK);
     player->RemoveAurasDueToSpell(SPELL_WAR_MODE);
     player->RemoveAurasDueToSpell(SPELL_PVE);
-    if (selectionId == SPELL_SELECT_PVE)
-        player->RemoveAurasDueToSpell(SPELL_MERCENARY);
+    player->RemoveAurasDueToSpell(SPELL_MERCENARY);
     if (selectionId == SPELL_SELECT_HIGH_RISK)
         player->CastSpell(player, SPELL_HIGH_RISK, true);
     else if (selectionId == SPELL_SELECT_PVE)
@@ -339,11 +338,11 @@ void AscensionRulesets::RegisterGuard(Guard guard)
         rulesetGuards.push_back(guard);
 }
 
-bool AscensionRulesets::CanApply(Player* player, Ruleset ruleset, bool forChallenge)
+bool AscensionRulesets::CanApply(Player* player, Ruleset ruleset)
 {
     if (!player)
         return false;
-    if (ruleset == Ruleset::HighRisk && !forChallenge && player->GetLevel() < HighRisk::MinimumLevel)
+    if (ruleset == Ruleset::HighRisk && player->GetLevel() < HighRisk::MinimumLevel)
         return false;
     for (Guard guard : rulesetGuards)
         if (!guard(player, ruleset))
@@ -351,9 +350,9 @@ bool AscensionRulesets::CanApply(Player* player, Ruleset ruleset, bool forChalle
     return true;
 }
 
-void AscensionRulesets::Apply(Player* player, Ruleset ruleset, bool forChallenge)
+void AscensionRulesets::Apply(Player* player, Ruleset ruleset)
 {
-    ApplyRuleset(player, SelectionSpell(ruleset), forChallenge);
+    ApplyRuleset(player, SelectionSpell(ruleset));
 }
 
 bool AscensionRulesets::Has(Player* player, Ruleset ruleset)

@@ -1,6 +1,5 @@
 /* Copyright (C) 2016+ AzerothCore, GNU AGPL v3. */
 #include "AscensionXoroth.h"
-#include "GossipDef.h"
 #include "Map.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
@@ -129,15 +128,10 @@ struct npc_ascension_xoroth_summon : public ScriptedAI
     }
     void sGossipHello(Player* player) override
     {
-        if (me->GetEntry() == 50268)
-            player->PlayerTalkClass->SendCloseGossip();
         Player* summoner = ObjectAccessor::GetPlayer(*me, owner);
         if (me->GetEntry() == 50268 && summoner && player->IsAlive() && !player->IsInCombat() &&
             player->IsWithinDistInMap(me, 5) && (player == summoner || summoner->IsInRaidWith(player)))
-        {
-            player->CastCustomSpell(23161, SPELLVALUE_BASE_POINT1,
-                GetRidingGroundMountSpeed(player->GetBaseSkillValue(SKILL_RIDING)), player, true);
-        }
+            Cast(player, player, 804775);
     }
     void JustDied(Unit*) override
     {

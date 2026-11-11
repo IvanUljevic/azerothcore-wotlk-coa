@@ -19,13 +19,8 @@ struct RunePouch
     uint32 amount;
 };
 
-constexpr std::array<RunePouch, 22> RunePouches{ {
+constexpr std::array<RunePouch, 17> RunePouches{ {
     { 1235070,   1000 },
-    { 1201002,    250 },
-    { 1201003,   1000 },
-    { 1303551,     50 },
-    { 1303552,     10 },
-    { 1201001,    100 },
     {  509872,  12500 },
     {  509873,  15000 },
     {  509886,  17500 },

@@ -550,23 +550,17 @@ class spell_ascension_cultist_gaze_of_cthun_jump : public SpellScript
         TempSummon* summon = creature->ToTempSummon();
         return summon && summon->m_Properties && summon->m_Properties->Type == SUMMON_TYPE_MINIPET;
     }
-    bool IsJumpTarget(Unit* unit)
-    {
-        Unit* caster = GetCaster();
-        return unit && !IsCompanion(unit) && caster &&
-            (caster->IsValidAttackTarget(unit, GetSpellInfo()) || caster->IsValidAssistTarget(unit));
-    }
-    void SkipUnusableTargets(std::list<WorldObject*>& targets)
+    void SkipCompanions(std::list<WorldObject*>& targets)
     {
         Unit* primary = GetExplTargetUnit();
         size_t const jumps = targets.size();
-        targets.remove_if([this](WorldObject* target) { return !IsJumpTarget(target ? target->ToUnit() : nullptr); });
+        targets.remove_if([](WorldObject* target) { return IsCompanion(target); });
         if (!primary || targets.size() == jumps)
             return;
         std::list<Unit*> candidates = Nearby(primary, GazeJumpRadius);
         candidates.remove_if([&](Unit* unit)
         {
-            return unit == primary || !IsJumpTarget(unit) ||
+            return unit == primary || IsCompanion(unit) ||
                 std::find(targets.begin(), targets.end(), unit) != targets.end() ||
                 GetSpellInfo()->CheckTarget(GetCaster(), unit, true) != SPELL_CAST_OK ||
                 !primary->IsWithinLOSInMap(unit, VMAP::ModelIgnoreFlags::M2);
@@ -582,9 +576,9 @@ class spell_ascension_cultist_gaze_of_cthun_jump : public SpellScript
     void Register() override
     {
         OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(
-            spell_ascension_cultist_gaze_of_cthun_jump::SkipUnusableTargets, EFFECT_0, TARGET_UNIT_TARGET_ANY);
+            spell_ascension_cultist_gaze_of_cthun_jump::SkipCompanions, EFFECT_0, TARGET_UNIT_TARGET_ANY);
         OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(
-            spell_ascension_cultist_gaze_of_cthun_jump::SkipUnusableTargets, EFFECT_1, TARGET_UNIT_TARGET_ANY);
+            spell_ascension_cultist_gaze_of_cthun_jump::SkipCompanions, EFFECT_1, TARGET_UNIT_TARGET_ANY);
     }
 };
 }

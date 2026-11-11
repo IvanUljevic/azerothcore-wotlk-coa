@@ -38,8 +38,7 @@ npc_escortAI::npc_escortAI(Creature* creature) : ScriptedAI(creature),
     DespawnAtEnd(true),
     DespawnAtFar(true),
     ScriptWP(false),
-    HasImmuneToNPCFlags(false),
-    m_hasReturnPoint(false)
+    HasImmuneToNPCFlags(false)
 {}
 
 void npc_escortAI::AttackStart(Unit* who)
@@ -207,14 +206,6 @@ void npc_escortAI::EnterEvadeMode(EvadeReason /*why*/)
 
     if (HasEscortState(STATE_ESCORT_ESCORTING))
     {
-        if (m_hasReturnPoint)
-            me->SetHomePosition(m_returnPoint);
-        else
-        {
-            m_returnPoint = me->GetHomePosition();
-            m_hasReturnPoint = true;
-        }
-
         AddEscortState(STATE_ESCORT_RETURNING);
         ReturnToLastPoint();
         LOG_DEBUG("scripts.ai", "EscortAI has left combat and is now returning to last point");

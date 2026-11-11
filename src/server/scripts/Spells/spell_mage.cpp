@@ -847,8 +847,11 @@ class spell_mage_master_of_elements : public AuraScript
             && spellInfo->SpellIconID == MAGE_ICON_LIVING_BOMB
             && !spellInfo->ManaCost && !spellInfo->ManaCostPercentage)
         {
+            uint8 rank = sSpellMgr->GetSpellRank(spellInfo->Id);
+            if (rank > sSpellMgr->GetSpellRank(sSpellMgr->GetLastSpellInChain(SPELL_MAGE_LIVING_BOMB_R1)))
+                return;
             spellInfo = sSpellMgr->GetSpellInfo(
-                sSpellMgr->GetSpellWithRankFor(SPELL_MAGE_LIVING_BOMB_R1, spellInfo->Id, true));
+                sSpellMgr->GetSpellWithRank(SPELL_MAGE_LIVING_BOMB_R1, rank));
             if (!spellInfo)
                 return;
         }

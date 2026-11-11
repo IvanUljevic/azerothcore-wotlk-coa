@@ -901,8 +901,8 @@ class spell_pal_holy_shock : public SpellScript
         if (!stockInfo || !stockInfo->IsRankOf(firstRankSpellInfo))
             return false;
 
-        if (!sSpellMgr->GetSpellWithRankFor(SPELL_PALADIN_HOLY_SHOCK_R1_DAMAGE, spellInfo->Id, true) ||
-            !sSpellMgr->GetSpellWithRankFor(SPELL_PALADIN_HOLY_SHOCK_R1_HEALING, spellInfo->Id, true))
+        uint8 rank = spellInfo->GetRank();
+        if (!sSpellMgr->GetSpellWithRank(SPELL_PALADIN_HOLY_SHOCK_R1_DAMAGE, rank, true) || !sSpellMgr->GetSpellWithRank(SPELL_PALADIN_HOLY_SHOCK_R1_HEALING, rank, true))
             return false;
 
         return true;
@@ -913,8 +913,10 @@ class spell_pal_holy_shock : public SpellScript
         Unit* caster = GetCaster();
         if (Unit* unitTarget = GetHitUnit())
         {
-            caster->CastSpell(unitTarget, sSpellMgr->GetSpellWithRankFor(caster->IsFriendlyTo(unitTarget) ?
-                SPELL_PALADIN_HOLY_SHOCK_R1_HEALING : SPELL_PALADIN_HOLY_SHOCK_R1_DAMAGE, GetSpellInfo()->Id), true);
+            uint8 rank = GetSpellInfo()->GetRank();
+            uint32 const stockSpell = sSpellMgr->GetSpellWithRank(caster->IsFriendlyTo(unitTarget) ?
+                SPELL_PALADIN_HOLY_SHOCK_R1_HEALING : SPELL_PALADIN_HOLY_SHOCK_R1_DAMAGE, rank);
+            caster->CastSpell(unitTarget, sSpellMgr->GetSpellTwinFor(stockSpell, GetSpellInfo()->Id), true);
         }
     }
 
@@ -2026,7 +2028,7 @@ class spell_pal_illumination : public AuraScript
 
             // if proc comes from the Holy Shock heal, need to get mana cost of original spell - else it's the original heal itself
             if (eventInfo.GetHealInfo()->GetSpellInfo()->SpellFamilyFlags[1] & 0x00010000)
-                originalSpell = sSpellMgr->GetSpellInfo(sSpellMgr->GetSpellWithRankFor(SPELL_PALADIN_HOLY_SHOCK_R1, eventInfo.GetHealInfo()->GetSpellInfo()->Id));
+                originalSpell = sSpellMgr->GetSpellInfo(sSpellMgr->GetSpellWithRank(SPELL_PALADIN_HOLY_SHOCK_R1, eventInfo.GetHealInfo()->GetSpellInfo()->GetRank()));
             else
                 originalSpell = eventInfo.GetHealInfo()->GetSpellInfo();
 

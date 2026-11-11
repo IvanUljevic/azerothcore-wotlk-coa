@@ -33,8 +33,6 @@ public:
         {
             SetHeaders(DataHeader);
             _eastWingProgress = 0;
-            _zevrimDead = 0;
-            _hydrospawnDead = 0;
             _westWingProgress = 0;
             _pylonsState = 0;
             _northWingProgress = 0;
@@ -73,12 +71,15 @@ public:
 
         void OnUnitDeath(Unit* unit) override
         {
-            if (unit->GetEntry() != NPC_HYDROSPAWN || _hydrospawnDead)
+            if (unit->GetEntry() != NPC_HYDROSPAWN)
                 return;
 
-            _hydrospawnDead = 1;
-            if (_zevrimDead && !_eastWingProgress)
+            if (_eastWingProgress == EAST_WING_ZEVRIM_DEAD)
                 _eastWingProgress = EAST_WING_IRONBARK_FREED;
+            else if (_eastWingProgress == 0)
+                _eastWingProgress = EAST_WING_HYDROSPAWN_DEAD;
+            else
+                return;
 
             SaveToDB();
         }
@@ -109,13 +110,9 @@ public:
             {
                 case TYPE_EAST_WING_PROGRESS:
                     // Zevrim Thornhoof's death reports progress 1, but Old Ironbark opens the way to Alzzin only once
-                    // Hydrospawn is dead too. The progress stays 0 until then: 2 to 4 would open the door.
-                    if (data == EAST_WING_IRONBARK_FREED && !_eastWingProgress)
-                    {
-                        _zevrimDead = 1;
-                        if (!_hydrospawnDead)
-                            break;
-                    }
+                    // Hydrospawn is dead too: until then the progress remembers which of the two has fallen.
+                    if (data == EAST_WING_IRONBARK_FREED && _eastWingProgress != EAST_WING_HYDROSPAWN_DEAD)
+                        data = _eastWingProgress == 0 ? EAST_WING_ZEVRIM_DEAD : _eastWingProgress;
                     _eastWingProgress = data;
                     break;
                 case TYPE_WEST_WING_PROGRESS:
@@ -172,8 +169,6 @@ public:
             data >> _pylonsState;
             data >> _northWingProgress;
             data >> _northWingBosses;
-            data >> _zevrimDead;
-            data >> _hydrospawnDead;
         }
 
         void WriteSaveDataMore(std::ostringstream& data) override
@@ -182,9 +177,7 @@ public:
                 << _westWingProgress << ' '
                 << _pylonsState << ' '
                 << _northWingProgress << ' '
-                << _northWingBosses << ' '
-                << _zevrimDead << ' '
-                << _hydrospawnDead;
+                << _northWingBosses;
         }
 
     private:
@@ -193,8 +186,6 @@ public:
         uint32 _pylonsState;
         uint32 _northWingProgress;
         uint32 _northWingBosses;
-        uint32 _zevrimDead;
-        uint32 _hydrospawnDead;
 
         ObjectGuid _immoltharGUID;
         std::vector<ObjectGuid> HighborneSummoners;

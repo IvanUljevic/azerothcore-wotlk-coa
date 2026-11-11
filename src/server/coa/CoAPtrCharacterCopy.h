@@ -4,17 +4,10 @@
 
 namespace PtrCharacterCopy
 {
-enum class Interruption
-{
-    None,
-    BeforeLoad,
-    AfterLoad,
-};
-
 class TestOverride
 {
 public:
-    explicit TestOverride(Interruption firstLoadInterruption = Interruption::None);
+    TestOverride();
     ~TestOverride();
     TestOverride(TestOverride const&) = delete;
     TestOverride& operator=(TestOverride const&) = delete;
